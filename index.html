@@ -4,57 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Scanner</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
-    <h1>Scan the QR Code</h1>
-    <video id="scanner" width="100%" height="auto" autoplay></video>
-    <p id="result">Waiting for QR code scan...</p>
+    <h1>QR Code Scanner</h1>
+    <div id="reader" style="width: 600px; height: 400px;"></div>
+
+    <p id="result"></p>
 
     <script>
-        const videoElement = document.getElementById('scanner');
-        const resultElement = document.getElementById('result');
-
-        // Start the video stream
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => {
-                videoElement.srcObject = stream;
-                videoElement.play();
-                scanQRCode();
-            })
-            .catch(err => {
-                console.error("Error accessing webcam: ", err);
+        const scanner = new Html5QrcodeScanner(
+            "reader", {
+                fps: 10,
+                qrbox: 250
             });
 
-        // Function to scan QR codes
-        function scanQRCode() {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
+        scanner.render(onScanSuccess, onScanFailure);
 
-            function scan() {
-                if (videoElement.videoWidth > 0) {
-                    canvas.width = videoElement.videoWidth;
-                    canvas.height = videoElement.videoHeight;
-                    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
-                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, canvas.width, canvas.height);
-
-                    if (code) {
-                        resultElement.textContent = `QR Code Data: ${code.data}`;
-                        // Compare with the expected fingerprint (received from the backend or locally)
-                        if (code.data === 'fffff') {
-                            resultElement.textContent = "End-to-End Encryption Verified Successfully!";
-                        } else {
-                            resultElement.textContent = "QR Codes Do Not Match! Possible MITM Attack!";
-                        }
-                    }
-                }
-
-                requestAnimationFrame(scan);
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`QR Code matched: ${decodedText}`);
+            document.getElementById("result").textContent = `QR Code matched: ${decodedText}`;
+            // Here you can add logic to verify the fingerprint or key
+            if (decodedText === "expectedFingerprintHere") {
+                alert("End-to-End Encryption Verified Successfully");
+            } else {
+                alert("QR Codes do not match. Potential MITM attack detected!");
             }
+        }
 
-            scan();
+        function onScanFailure(error) {
+            console.warn(error);
         }
     </script>
 </body>
